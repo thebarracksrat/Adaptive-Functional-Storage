@@ -1,0 +1,1 @@
+{"variants":{"facing=north":{"model":"adaptive_functional_storage:block/adaptive_armory"},"facing=east":{"model":"adaptive_functional_storage:block/adaptive_armory","y":90},"facing=south":{"model":"adaptive_functional_storage:block/adaptive_armory","y":180},"facing=west":{"model":"adaptive_functional_storage:block/adaptive_armory","y":270}}}

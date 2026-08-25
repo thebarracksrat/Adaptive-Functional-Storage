@@ -1,0 +1,1 @@
+{"type":"minecraft:crafting_shaped","category":"misc","pattern":["DGI","GBG","IGD"],"key":{"D":{"item":"minecraft:diamond"},"G":{"item":"minecraft:glass"},"I":{"item":"minecraft:iron_ingot"},"B":{"tag":"functionalstorage:fluid_drawer"}},"result":{"id":"adaptive_functional_storage:adaptive_fluid_drawer","count":1}}

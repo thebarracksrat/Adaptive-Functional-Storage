@@ -1,0 +1,13 @@
+{
+  "type":"minecraft:crafting_shaped",
+  "category":"misc",
+  "pattern":["IGI","DCD","IRI"],
+  "key":{
+    "I":{"item":"minecraft:iron_ingot"},
+    "G":{"item":"minecraft:glass"},
+    "D":{"item":"minecraft:diamond"},
+    "C":{"item":"adaptive_functional_storage:adaptive_controller"},
+    "R":{"item":"minecraft:redstone"}
+  },
+  "result":{"id":"adaptive_functional_storage:adaptive_grid","count":1}
+}

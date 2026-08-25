@@ -1,0 +1,75 @@
+{
+	"format_version": "1.21.11",
+	"credit": "Adaptive Functional Storage editable regular Grid source; current Controller skin baseline and Functional Storage MIT geometry",
+	"textures": {
+		"particle": "adaptive_functional_storage:block/grid_front_online_static_source",
+		"front": "adaptive_functional_storage:block/grid_front_online_static_source",
+		"bottom": "adaptive_functional_storage:block/drawer_side_online"
+	},
+	"elements": [
+		{
+			"name": "front",
+			"from": [1, 1, 0.5],
+			"to": [15, 15, 2.5],
+			"faces": {
+				"north": {"uv": [1, 1, 15, 15], "texture": "#front"}
+			}
+		},
+		{
+			"name": "left",
+			"from": [15, 1, 0],
+			"to": [16, 15, 15],
+			"faces": {
+				"north": {"uv": [1, 0, 15, 1], "rotation": 90, "texture": "#bottom"},
+				"east": {"uv": [1, 1, 16, 15], "texture": "#bottom"},
+				"west": {"uv": [0, 1, 15, 15], "texture": "#bottom"}
+			}
+		},
+		{
+			"name": "top",
+			"from": [0, 15, 0],
+			"to": [16, 16, 16],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 1], "texture": "#bottom"},
+				"east": {"uv": [0, 0, 16, 1], "texture": "#bottom"},
+				"south": {"uv": [0, 0, 16, 1], "texture": "#bottom"},
+				"west": {"uv": [0, 0, 16, 1], "texture": "#bottom"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#bottom"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#bottom"}
+			}
+		},
+		{
+			"name": "right",
+			"from": [0, 1, 0],
+			"to": [1, 15, 15],
+			"faces": {
+				"north": {"uv": [1, 0, 15, 1], "rotation": 90, "texture": "#bottom"},
+				"east": {"uv": [1, 1, 16, 15], "texture": "#bottom"},
+				"west": {"uv": [0, 1, 15, 15], "texture": "#bottom"}
+			}
+		},
+		{
+			"name": "bottom",
+			"from": [0, 0, 0],
+			"to": [16, 1, 16],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 1], "texture": "#bottom"},
+				"east": {"uv": [0, 0, 16, 1], "texture": "#bottom"},
+				"south": {"uv": [0, 0, 16, 1], "rotation": 180, "texture": "#bottom"},
+				"west": {"uv": [0, 0, 16, 1], "texture": "#bottom"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#bottom"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#bottom"}
+			}
+		},
+		{
+			"name": "back",
+			"from": [0, 1, 15],
+			"to": [16, 15, 16],
+			"faces": {
+				"east": {"uv": [1, 0, 15, 1], "rotation": 90, "texture": "#bottom"},
+				"south": {"uv": [0, 1, 16, 15], "texture": "#bottom"},
+				"west": {"uv": [1, 15, 15, 16], "rotation": 90, "texture": "#bottom"}
+			}
+		}
+	]
+}

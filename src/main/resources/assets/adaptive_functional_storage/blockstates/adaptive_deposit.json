@@ -1,0 +1,1 @@
+{"variants":{"facing=north":{"model":"adaptive_functional_storage:block/adaptive_deposit"},"facing=east":{"model":"adaptive_functional_storage:block/adaptive_deposit","y":90},"facing=south":{"model":"adaptive_functional_storage:block/adaptive_deposit","y":180},"facing=west":{"model":"adaptive_functional_storage:block/adaptive_deposit","y":270}}}

@@ -1,0 +1,1 @@
+{"type":"minecraft:crafting_shapeless","category":"misc","ingredients":[{"item":"adaptive_functional_storage:adaptive_grid"},{"item":"minecraft:crafting_table"},{"item":"minecraft:diamond"}],"result":{"id":"adaptive_functional_storage:adaptive_crafting_grid","count":1}}

@@ -1,0 +1,1 @@
+{"type":"minecraft:crafting_shaped","category":"misc","pattern":[" D ","DAD"," D "],"key":{"D":{"item":"minecraft:diamond"},"A":{"item":"functionalstorage:armory_cabinet"}},"result":{"id":"adaptive_functional_storage:adaptive_armory","count":1}}
