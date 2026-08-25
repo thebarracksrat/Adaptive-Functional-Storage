@@ -2,8 +2,8 @@
 	"format_version": "1.21.11",
 	"credit": "Adaptive Functional Storage editable controller source; flattened from Functional Storage MIT components",
 	"textures": {
-		"particle": "functionalstorage:block/controller_front",
-		"front": "functionalstorage:block/controller_front",
+		"particle": "adaptive_functional_storage:block/palette_controller_online",
+		"front": "adaptive_functional_storage:block/palette_controller_online",
 		"bottom": "adaptive_functional_storage:block/drawer_side_online",
 		"side": "adaptive_functional_storage:block/drawer_side_online",
 		"top": "adaptive_functional_storage:block/drawer_side_online"
