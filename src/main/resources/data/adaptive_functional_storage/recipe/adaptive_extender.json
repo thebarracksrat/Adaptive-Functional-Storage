@@ -1,1 +1,0 @@
-{"type":"minecraft:crafting_shaped","category":"misc","pattern":["IRI","RCR","IRI"],"key":{"I":{"item":"minecraft:iron_ingot"},"R":{"item":"minecraft:redstone"},"C":{"item":"adaptive_functional_storage:adaptive_controller"}},"result":{"id":"adaptive_functional_storage:adaptive_extender","count":1}}

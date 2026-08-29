@@ -1,6 +1,6 @@
 # Notice
 
-Adaptive Functional Storage 0.1.0
+Adaptive Functional Storage 0.2.0
 
 Copyright 2026 Silent Vector Studios
 

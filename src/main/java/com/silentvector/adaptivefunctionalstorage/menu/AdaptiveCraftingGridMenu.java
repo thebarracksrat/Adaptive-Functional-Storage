@@ -20,6 +20,8 @@ public final class AdaptiveCraftingGridMenu extends AdaptiveGridMenu {
     private final ResultContainer result = new ResultContainer();
     private final Player player;
     private final java.util.List<Slot> craftingSlots = new java.util.ArrayList<>();
+    private boolean refilling;
+    private int craftingSyncDelay;
 
     public AdaptiveCraftingGridMenu(int id, Inventory inventory, BlockPos pos) {
         this(id, inventory, inventory.player.level().getBlockEntity(pos) instanceof AdaptiveCraftingGridBlockEntity found ? found : null);
@@ -30,8 +32,41 @@ public final class AdaptiveCraftingGridMenu extends AdaptiveGridMenu {
         this.player = inventory.player;
         for (int row = 0; row < 3; row++) for (int column = 0; column < 3; column++)
             craftingSlots.add(addSlot(new Slot(crafting, column + row * 3, 26 + column * 18, 78 + row * 18)));
-        addSlot(new ResultSlot(player, crafting, result, 0, 134, 96));
+        addSlot(new ResultSlot(player, crafting, result, 0, 134, 96) {
+            @Override public void onTake(Player player, ItemStack crafted) {
+                ItemStack[] template = new ItemStack[crafting.getContainerSize()];
+                for (int slot = 0; slot < template.length; slot++)
+                    template[slot] = crafting.getItem(slot).copyWithCount(1);
+                super.onTake(player, crafted);
+                refillFromNetwork(template);
+            }
+        });
         slotsChanged(crafting);
+    }
+
+    private void refillFromNetwork(ItemStack[] template) {
+        if (refilling || player.level().isClientSide || controller() == null) return;
+        refilling = true;
+        try {
+            for (int slot = 0; slot < template.length; slot++) {
+                if (template[slot].isEmpty() || !crafting.getItem(slot).isEmpty()) continue;
+                ItemStack replacement = controller().extractNetwork(template[slot], 1);
+                if (!replacement.isEmpty()) crafting.setItem(slot, replacement);
+            }
+            slotsChanged(crafting);
+            // Container clicks suppress remote updates while they run. Waiting through
+            // the click's own broadcasts ensures the forced state is sent afterward.
+            craftingSyncDelay = 2;
+        } finally {
+            refilling = false;
+        }
+    }
+
+    @Override public void broadcastChanges() {
+        super.broadcastChanges();
+        if (craftingSyncDelay > 0 && --craftingSyncDelay == 0) {
+            broadcastFullState();
+        }
     }
 
     public java.util.List<Slot> emiCraftingSlots() { return java.util.List.copyOf(craftingSlots); }
@@ -61,7 +96,7 @@ public final class AdaptiveCraftingGridMenu extends AdaptiveGridMenu {
             slot.onTake(player, original);
             return original;
         }
-        ItemStack remainder = controller() == null ? slot.getItem() : controller().insert(slot.getItem());
+        ItemStack remainder = controller() == null ? slot.getItem() : controller().insertNetwork(slot.getItem());
         slot.set(remainder);
         return remainder.getCount() == original.getCount() ? ItemStack.EMPTY : original;
     }
@@ -72,7 +107,7 @@ public final class AdaptiveCraftingGridMenu extends AdaptiveGridMenu {
         for (int i = 0; i < crafting.getContainerSize(); i++) {
             ItemStack stack = crafting.removeItemNoUpdate(i);
             if (stack.isEmpty()) continue;
-            ItemStack remainder = controller() == null ? stack : controller().insert(stack);
+            ItemStack remainder = controller() == null ? stack : controller().insertNetwork(stack);
             if (!remainder.isEmpty() && !player.getInventory().add(remainder)) player.drop(remainder, false);
         }
     }

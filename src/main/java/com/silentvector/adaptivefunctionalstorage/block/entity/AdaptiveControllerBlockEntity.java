@@ -1,9 +1,15 @@
 package com.silentvector.adaptivefunctionalstorage.block.entity;
 
 import com.buuz135.functionalstorage.util.Utils;
+import com.buuz135.functionalstorage.block.tile.DrawerProperties;
+import com.buuz135.functionalstorage.block.tile.ItemControllableDrawerTile;
+import com.buuz135.functionalstorage.block.tile.StorageControllerTile;
+import com.buuz135.functionalstorage.item.FSAttachments;
+import com.buuz135.functionalstorage.inventory.ILockable;
 import com.silentvector.adaptivefunctionalstorage.block.AdaptiveDrawerBlock;
 import com.silentvector.adaptivefunctionalstorage.block.AdaptiveControllerBlock;
 import com.silentvector.adaptivefunctionalstorage.registry.ModBlockEntities;
+import com.silentvector.adaptivefunctionalstorage.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponents;
@@ -16,7 +22,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.energy.EnergyStorage;
@@ -26,7 +31,7 @@ import java.util.List;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public final class AdaptiveControllerBlockEntity extends BlockEntity {
+public final class AdaptiveControllerBlockEntity extends ItemControllableDrawerTile<AdaptiveControllerBlockEntity> {
     public static final int RANGE = 24;
     public static final long MAX_PER_IDENTITY = Integer.MAX_VALUE;
     private final List<BulkEntry> ledger = new ArrayList<>();
@@ -36,10 +41,21 @@ public final class AdaptiveControllerBlockEntity extends BlockEntity {
     private PlanSnapshot cachedPresentation;
     private List<BlockPos> cachedDrawers;
     private final Set<BlockPos> members = new LinkedHashSet<>();
-    private final ControllerEnergyStorage energy = new ControllerEnergyStorage(1_000_000, 10_000);
+    private final ControllerEnergyStorage energy = new ControllerEnergyStorage(1_000_000, 1_000_000);
     private boolean powered;
+    private BlockPos cachedFsControllerPos;
+    private int cachedFsLinkCount = -1;
 
-    public AdaptiveControllerBlockEntity(BlockPos pos, BlockState state) { super(ModBlockEntities.ADAPTIVE_CONTROLLER.get(), pos, state); }
+    private final IItemHandler matrixStorage = createMatrixStorage();
+
+    public AdaptiveControllerBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlocks.ADAPTIVE_CONTROLLER.get(), ModBlockEntities.ADAPTIVE_CONTROLLER.get(), pos, state,
+                new DrawerProperties(0, FSAttachments.ITEM_STORAGE_MODIFIER));
+    }
+
+    @Override public AdaptiveControllerBlockEntity getSelf() { return this; }
+    @Override public int getStorageSlotAmount() { return 0; }
+    @Override public IItemHandler getStorage() { return matrixStorage; }
     public boolean hasContents() { return !ledger.isEmpty(); }
     public int range() { return RANGE; }
     public SortMode sortMode() { return sortMode; }
@@ -81,9 +97,19 @@ public final class AdaptiveControllerBlockEntity extends BlockEntity {
     }
     public EnergyStorage energyStorage() { return energy; }
     public boolean isPowered() { return powered; }
-    public static void serverTick(net.minecraft.world.level.Level level, BlockPos pos, BlockState state, AdaptiveControllerBlockEntity controller) {
-        boolean next = controller.energy.getEnergyStored() >= 20;
-        if (next) controller.energy.extractEnergy(20, false);
+    public int energyDrawPerTick() {
+        if (level == null) return 20;
+        long drawers = members.stream()
+                .filter(member -> level.getBlockEntity(member) instanceof AdaptiveDrawerBlockEntity drawer
+                        && worldPosition.equals(drawer.controllerPos()))
+                .count();
+        return (int) Math.min(Integer.MAX_VALUE, 20L + 5L * drawers);
+    }
+    @Override public void serverTick(net.minecraft.world.level.Level level, BlockPos pos, BlockState state, AdaptiveControllerBlockEntity controller) {
+        super.serverTick(level, pos, state, controller);
+        int draw = controller.energyDrawPerTick();
+        boolean next = controller.energy.getEnergyStored() >= draw;
+        if (next) controller.energy.extractEnergy(draw, false);
         boolean powerChanged = controller.powered != next;
         boolean stateChanged = state.hasProperty(AdaptiveControllerBlock.POWERED)
                 && state.getValue(AdaptiveControllerBlock.POWERED) != next;
@@ -201,12 +227,18 @@ public final class AdaptiveControllerBlockEntity extends BlockEntity {
         if (level != null && !level.isClientSide) adoptNearbyDrawers();
     }
 
-    public IItemHandler automationHandler() {
-        return new IItemHandler() {
+    public IItemHandler automationHandler() { return matrixStorage; }
+
+    private IItemHandler createMatrixStorage() {
+        return new MatrixStorage();
+    }
+
+    private final class MatrixStorage implements IItemHandler, ILockable {
+            @Override public boolean isLocked() { return true; }
             @Override public int getSlots() { return Math.max(1, drawerPositions().size() * 4); }
             @Override public ItemStack getStackInSlot(int slot) {
                 BulkEntry entry = entryAt(slot);
-                return entry == null ? ItemStack.EMPTY : entry.identity.copyWithCount((int) Math.min(entry.identity.getMaxStackSize(), entry.amount));
+                return entry == null ? ItemStack.EMPTY : entry.identity.copyWithCount((int) Math.min(Integer.MAX_VALUE, entry.amount));
             }
             @Override public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
                 if (slot < 0 || slot >= getSlots() || stack.isEmpty()) return stack;
@@ -223,8 +255,7 @@ public final class AdaptiveControllerBlockEntity extends BlockEntity {
             }
             @Override public int getSlotLimit(int slot) { return 64; }
             @Override public boolean isItemValid(int slot, ItemStack stack) { return slot >= 0 && slot < getSlots(); }
-        };
-    }
+        }
 
     private BulkEntry entryAt(int slot) {
         if (slot < 0) return null;
@@ -330,6 +361,102 @@ public final class AdaptiveControllerBlockEntity extends BlockEntity {
         return sortedEntries().stream().map(entry -> new DisplayAssignment(entry.identity.copyWithCount(1), entry.amount)).toList();
     }
 
+    private List<IItemHandler> networkHandlers() {
+        if (level != null && getControllerPos() != null
+                && level.getBlockEntity(getControllerPos()) instanceof StorageControllerTile<?> controller) {
+            int linked = controller.getConnectedDrawers().getConnectedDrawers().size();
+            if (!getControllerPos().equals(cachedFsControllerPos) || linked != cachedFsLinkCount) {
+                controller.getConnectedDrawers().rebuild();
+                controller.inventoryHandler.invalidateSlots();
+                cachedFsControllerPos = getControllerPos().immutable();
+                cachedFsLinkCount = controller.getConnectedDrawers().getConnectedDrawers().size();
+            }
+            List<IItemHandler> handlers = controller.getConnectedDrawers().getConnectedDrawers().stream()
+                    .map(BlockPos::of)
+                    .map(level::getBlockEntity)
+                    .filter(ItemControllableDrawerTile.class::isInstance)
+                    .map(ItemControllableDrawerTile.class::cast)
+                    .map(ItemControllableDrawerTile::getStorage)
+                    .filter(handler -> !(handler instanceof com.buuz135.functionalstorage.inventory.ControllerInventoryHandler))
+                    .toList();
+            if (handlers.isEmpty() && cachedFsLinkCount > 0) {
+                controller.getConnectedDrawers().rebuild();
+                controller.inventoryHandler.invalidateSlots();
+                handlers = controller.getConnectedDrawers().getConnectedDrawers().stream()
+                        .map(BlockPos::of)
+                        .map(level::getBlockEntity)
+                        .filter(ItemControllableDrawerTile.class::isInstance)
+                        .map(ItemControllableDrawerTile.class::cast)
+                        .map(ItemControllableDrawerTile::getStorage)
+                        .filter(handler -> !(handler instanceof com.buuz135.functionalstorage.inventory.ControllerInventoryHandler))
+                        .toList();
+            }
+            if (!handlers.isEmpty()) return handlers;
+        }
+        return List.of(matrixStorage);
+    }
+
+    public List<DisplayAssignment> networkGridEntries() {
+        if (!powered) return List.of();
+        List<IItemHandler> handlers = networkHandlers();
+        if (handlers.size() == 1 && handlers.getFirst() == matrixStorage) return gridEntries();
+        List<BulkEntry> entries = new ArrayList<>();
+        for (IItemHandler storage : handlers) {
+            for (int slot = 0; slot < storage.getSlots(); slot++) {
+                ItemStack stack = storage.getStackInSlot(slot);
+                if (stack.isEmpty()) continue;
+                BulkEntry match = entries.stream()
+                        .filter(entry -> ItemStack.isSameItemSameComponents(entry.identity, stack)).findFirst().orElse(null);
+                if (match == null) entries.add(new BulkEntry(stack.copyWithCount(1), stack.getCount()));
+                else match.amount = Math.min(Integer.MAX_VALUE, match.amount + (long) stack.getCount());
+            }
+        }
+        sortEntries(entries);
+        return entries.stream().map(entry -> new DisplayAssignment(entry.identity.copyWithCount(1), entry.amount)).toList();
+    }
+
+    public ItemStack insertNetwork(ItemStack stack) {
+        return insertNetwork(stack, false);
+    }
+
+    public ItemStack insertNetwork(ItemStack stack, boolean simulate) {
+        if (!powered || stack.isEmpty()) return stack;
+        ItemStack remainder = stack.copy();
+        List<IItemHandler> handlers = networkHandlers();
+        for (IItemHandler storage : handlers) {
+            for (int slot = 0; slot < storage.getSlots() && !remainder.isEmpty(); slot++) {
+                ItemStack existing = storage.getStackInSlot(slot);
+                if (!existing.isEmpty() && ItemStack.isSameItemSameComponents(existing, remainder))
+                    remainder = storage.insertItem(slot, remainder, simulate);
+            }
+        }
+        for (IItemHandler storage : handlers) {
+            for (int slot = 0; slot < storage.getSlots() && !remainder.isEmpty(); slot++) {
+                if (storage.getStackInSlot(slot).isEmpty()) remainder = storage.insertItem(slot, remainder, simulate);
+            }
+        }
+        return remainder;
+    }
+
+    public ItemStack extractNetwork(ItemStack identity, int requested) {
+        if (!powered || identity.isEmpty() || requested <= 0) return ItemStack.EMPTY;
+        ItemStack result = identity.copyWithCount(0);
+        int remaining = requested;
+        for (IItemHandler storage : networkHandlers()) {
+            for (int slot = 0; slot < storage.getSlots() && remaining > 0; slot++) {
+                ItemStack existing = storage.getStackInSlot(slot);
+                if (existing.isEmpty() || !ItemStack.isSameItemSameComponents(existing, identity)) continue;
+                ItemStack extracted = storage.extractItem(slot, remaining, false);
+                if (!extracted.isEmpty()) {
+                    result.grow(extracted.getCount());
+                    remaining -= extracted.getCount();
+                }
+            }
+            if (remaining <= 0) break;
+        }
+        return result;
+    }
+
     public List<ItemStack> assignmentsFor(BlockPos drawerPos) { return displayAssignmentsFor(drawerPos).stream().map(entry -> entry.identity.copyWithCount(1)).toList(); }
     public List<DisplayAssignment> displayAssignmentsFor(BlockPos drawerPos) {
         if (!powered) return List.of();
@@ -429,25 +556,37 @@ public final class AdaptiveControllerBlockEntity extends BlockEntity {
     private static List<Integer> layoutSizes(int identityCount, int drawerCount) {
         if (drawerCount == 0) return List.of();
         int represented = Math.min(identityCount, drawerCount * 4);
-        List<Integer> sizes = new ArrayList<>();
         if (represented <= drawerCount) {
+            List<Integer> sizes = new ArrayList<>();
             for (int index = 0; index < drawerCount; index++) sizes.add(index < represented ? 1 : 0);
             return sizes;
         }
-        int deltaFromAllTwo = represented - drawerCount * 2;
-        int ones;
-        int fours;
-        if (deltaFromAllTwo < 0) {
-            ones = -deltaFromAllTwo;
-            fours = 0;
-        } else {
-            fours = (deltaFromAllTwo + 1) / 2;
-            ones = fours * 2 - deltaFromAllTwo;
+
+        int bestOnes = 0, bestTwos = 0, bestFours = drawerCount;
+        int bestCapacity = drawerCount * 4;
+        double average = represented / (double) drawerCount;
+        double bestSpread = Double.POSITIVE_INFINITY;
+        for (int ones = 0; ones <= drawerCount; ones++) {
+            for (int twos = 0; twos <= drawerCount - ones; twos++) {
+                int fours = drawerCount - ones - twos;
+                int capacity = ones + twos * 2 + fours * 4;
+                if (capacity < represented) continue;
+                double spread = ones * Math.pow(1 - average, 2)
+                        + twos * Math.pow(2 - average, 2)
+                        + fours * Math.pow(4 - average, 2);
+                if (capacity < bestCapacity || capacity == bestCapacity && spread < bestSpread) {
+                    bestCapacity = capacity;
+                    bestSpread = spread;
+                    bestOnes = ones;
+                    bestTwos = twos;
+                    bestFours = fours;
+                }
+            }
         }
-        int twos = drawerCount - ones - fours;
-        for (int index = 0; index < ones; index++) sizes.add(1);
-        for (int index = 0; index < twos; index++) sizes.add(2);
-        for (int index = 0; index < fours; index++) sizes.add(4);
+        List<Integer> sizes = new ArrayList<>(drawerCount);
+        for (int index = 0; index < bestOnes; index++) sizes.add(1);
+        for (int index = 0; index < bestTwos; index++) sizes.add(2);
+        for (int index = 0; index < bestFours; index++) sizes.add(4);
         return sizes;
     }
 
@@ -520,6 +659,10 @@ public final class AdaptiveControllerBlockEntity extends BlockEntity {
 
     private List<BulkEntry> sortedEntries() {
         List<BulkEntry> sorted = new ArrayList<>(ledger);
+        sortEntries(sorted);
+        return sorted;
+    }
+    private void sortEntries(List<BulkEntry> sorted) {
         Comparator<BulkEntry> itemId = Comparator.comparing(entry -> BuiltInRegistries.ITEM.getKey(entry.identity.getItem()).toString());
         Comparator<BulkEntry> comparator = switch (sortMode) {
             case COUNT -> Comparator.comparingLong((BulkEntry entry) -> entry.amount).reversed().thenComparing(itemId);
@@ -529,7 +672,6 @@ public final class AdaptiveControllerBlockEntity extends BlockEntity {
             case CATEGORY -> Comparator.comparing(this::category).thenComparing(itemId);
         };
         sorted.sort(comparator);
-        return sorted;
     }
     private String primaryTag(BulkEntry entry) { return entry.identity.getItem().builtInRegistryHolder().tags().map(TagKey::location).map(Object::toString).sorted().findFirst().orElse("~untagged"); }
     private String category(BulkEntry entry) {
@@ -558,7 +700,7 @@ public final class AdaptiveControllerBlockEntity extends BlockEntity {
         tag.putLongArray("members", members.stream().mapToLong(BlockPos::asLong).toArray());
         tag.putInt("energy", energy.getEnergyStored());
     }
-    @Override protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+    @Override public void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries); ledger.clear(); members.clear();
         if (tag.contains("bulk_ledger")) {
             ListTag entries = tag.getList("bulk_ledger", 10);

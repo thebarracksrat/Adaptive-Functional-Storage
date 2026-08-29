@@ -1,0 +1,1 @@
+{"type":"minecraft:crafting_shapeless","category":"misc","ingredients":[{"type":"functionalstorage:tag_without_component","tag":"adaptive_functional_storage:prototype_dark_oak_drawers"},{"item":"adaptive_functional_storage:adaptive_upgrade"}],"result":{"id":"adaptive_functional_storage:adaptive_dark_oak_drawer","count":1}}

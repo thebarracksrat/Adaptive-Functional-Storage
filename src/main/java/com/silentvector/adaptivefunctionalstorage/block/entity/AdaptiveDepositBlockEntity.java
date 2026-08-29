@@ -20,9 +20,7 @@ public final class AdaptiveDepositBlockEntity extends BlockEntity {
         @Override public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
             AdaptiveControllerBlockEntity controller = controller();
             if (slot != 0 || controller == null || stack.isEmpty()) return stack;
-            if (!simulate) return controller.insert(stack);
-            int accepted = controller.automationHandler().insertItem(0, stack, true).getCount();
-            return stack.copyWithCount(accepted);
+            return controller.insertNetwork(stack, simulate);
         }
         @Override public ItemStack extractItem(int slot, int amount, boolean simulate) { return ItemStack.EMPTY; }
         @Override public int getSlotLimit(int slot) { return 64; }

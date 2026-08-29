@@ -36,7 +36,7 @@ public final class AdaptiveDepositBlock extends BaseEntityBlock {
     @Override protected ItemInteractionResult useItemOn(ItemStack held, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (!level.isClientSide && level.getBlockEntity(pos) instanceof AdaptiveDepositBlockEntity deposit) {
             if (deposit.controller() == null) player.displayClientMessage(Component.literal("Adaptive Deposit offline"), true);
-            else player.setItemInHand(hand, deposit.controller().insert(held));
+            else player.setItemInHand(hand, deposit.controller().insertNetwork(held));
         }
         return ItemInteractionResult.sidedSuccess(level.isClientSide);
     }

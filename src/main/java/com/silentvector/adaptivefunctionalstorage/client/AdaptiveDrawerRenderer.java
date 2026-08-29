@@ -57,7 +57,7 @@ public final class AdaptiveDrawerRenderer implements BlockEntityRenderer<Adaptiv
         float[][] positions = switch (regions) {
             case 1 -> new float[][]{{0.5F, 0.5F}};
             case 2 -> new float[][]{{0.5F, 0.77F}, {0.5F, 0.27F}};
-            default -> new float[][]{{0.25F, 0.77F}, {0.75F, 0.77F}, {0.25F, 0.27F}, {0.75F, 0.27F}};
+            default -> new float[][]{{0.75F, 0.77F}, {0.25F, 0.77F}, {0.75F, 0.27F}, {0.25F, 0.27F}};
         };
         int visibleAssignments = Math.min(assignments.size(), positions.length);
         for (int index = 0; index < visibleAssignments; index++) {

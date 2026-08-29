@@ -10,6 +10,9 @@ import com.silentvector.adaptivefunctionalstorage.block.entity.AdaptiveFluidDraw
 import com.silentvector.adaptivefunctionalstorage.block.AdaptiveDrawerBlock;
 import com.buuz135.functionalstorage.FunctionalStorage;
 import com.buuz135.functionalstorage.item.FSAttachments;
+import com.buuz135.functionalstorage.block.tile.StorageControllerTile;
+import com.buuz135.functionalstorage.block.tile.ItemControllableDrawerTile;
+import net.neoforged.neoforge.items.IItemHandler;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.InteractionHand;
@@ -25,6 +28,22 @@ public final class InteractionEvents {
     public static void onRightClick(PlayerInteractEvent.RightClickBlock event) {
         ItemStack tool=event.getItemStack();
         var blockEntity=event.getLevel().getBlockEntity(event.getPos());
+        if (blockEntity instanceof StorageControllerTile<?> fsController
+                && event.getHand() == InteractionHand.MAIN_HAND
+                && !tool.isEmpty()
+                && !tool.is(FunctionalStorage.LINKING_TOOL.get())
+                && !tool.is(FunctionalStorage.CONFIGURATION_TOOL.get())) {
+            AdaptiveControllerBlockEntity matrix = fsController.getConnectedDrawers().getConnectedDrawers().stream()
+                    .map(BlockPos::of).map(event.getLevel()::getBlockEntity)
+                    .filter(AdaptiveControllerBlockEntity.class::isInstance)
+                    .map(AdaptiveControllerBlockEntity.class::cast).findFirst().orElse(null);
+            if (matrix != null) {
+                event.setCanceled(true);
+                if (!event.getLevel().isClientSide) event.getEntity().setItemInHand(event.getHand(),
+                        routeIntoFunctionalNetwork(fsController, matrix, tool));
+                return;
+            }
+        }
         if (tool.is(ModItems.ADAPTIVE_CONFIGURATION_TOOL.get())
                 && (blockEntity instanceof AdaptiveControllerBlockEntity || blockEntity instanceof AdaptiveDrawerBlockEntity)) {
             event.setCanceled(true);
@@ -69,7 +88,7 @@ public final class InteractionEvents {
                 if (!sneaking) {
                     event.getEntity().displayClientMessage(Component.literal("Sort: " + controller.sortMode().label()
                             + " | Layout: " + controller.layoutMode().label() + " | Priority: " + controller.countPriority().label()
-                            + " | " + (controller.isPowered() ? "ONLINE" : "OFFLINE") + " | " + controller.energyStorage().getEnergyStored() + " FE"), true);
+                            + " | " + (controller.isPowered() ? "ONLINE" : "OFFLINE") + " | " + controller.energyDrawPerTick() + " FE/t | " + controller.energyStorage().getEnergyStored() + " FE"), true);
                 } else if (tool.is(Items.GLASS)) {
                     event.getEntity().displayClientMessage(Component.literal("Adaptive layout: " + controller.cycleLayoutMode().label()), true);
                 } else if (tool.is(Items.COMPASS)) {
@@ -81,20 +100,14 @@ public final class InteractionEvents {
             }
         }
         if(!tool.is(FunctionalStorage.LINKING_TOOL.get()))return;
-        boolean adaptiveTarget=blockEntity instanceof AdaptiveControllerBlockEntity
-                || blockEntity instanceof AdaptiveDrawerBlockEntity || blockEntity instanceof AdaptiveGridBlockEntity
+        boolean adaptiveTarget=blockEntity instanceof AdaptiveDrawerBlockEntity || blockEntity instanceof AdaptiveGridBlockEntity
                 || blockEntity instanceof AdaptiveDepositBlockEntity || blockEntity instanceof AdaptiveExtenderBlockEntity
                 || blockEntity instanceof AdaptiveArmoryBlockEntity || blockEntity instanceof AdaptiveFluidDrawerBlockEntity;
         if(!adaptiveTarget)return;
         event.setCanceled(true);
         if(event.getLevel().isClientSide)return;
-        if(blockEntity instanceof AdaptiveControllerBlockEntity controller){
-            tool.set(FSAttachments.CONTROLLER,controller.getBlockPos());
-            event.getEntity().displayClientMessage(net.minecraft.network.chat.Component.literal("Functional Storage Linking Tool configured to Adaptive Controller"),true);
-            return;
-        }
         if(!tool.has(FSAttachments.CONTROLLER)){
-            event.getEntity().displayClientMessage(net.minecraft.network.chat.Component.literal("Configure the Functional Storage Linking Tool on an Adaptive Controller first"),true);
+            event.getEntity().displayClientMessage(net.minecraft.network.chat.Component.literal("Configure the Functional Storage Linking Tool on an Adaptive Matrix first"),true);
             return;
         }
         BlockPos controllerPos=tool.get(FSAttachments.CONTROLLER);
@@ -109,6 +122,31 @@ public final class InteractionEvents {
                 : blockEntity instanceof AdaptiveArmoryBlockEntity armory ? armory.linkTo(controller)
                 : blockEntity instanceof AdaptiveFluidDrawerBlockEntity fluid && fluid.linkTo(controller);
         event.getEntity().displayClientMessage(net.minecraft.network.chat.Component.literal(linked ? "Block linked to Adaptive Controller" : "This block cannot be linked"),true);
+    }
+
+    private static ItemStack routeIntoFunctionalNetwork(StorageControllerTile<?> controller,
+                                                         AdaptiveControllerBlockEntity matrix,
+                                                         ItemStack offered) {
+        ItemStack remainder = offered;
+        List<IItemHandler> ordinary = controller.getConnectedDrawers().getConnectedDrawers().stream()
+                .map(BlockPos::of).map(controller.getLevel()::getBlockEntity)
+                .filter(ItemControllableDrawerTile.class::isInstance)
+                .filter(entity -> !(entity instanceof AdaptiveControllerBlockEntity))
+                .map(ItemControllableDrawerTile.class::cast).map(ItemControllableDrawerTile::getStorage).toList();
+        for (IItemHandler handler : ordinary) {
+            for (int slot = 0; slot < handler.getSlots() && !remainder.isEmpty(); slot++) {
+                ItemStack existing = handler.getStackInSlot(slot);
+                if (!existing.isEmpty() && ItemStack.isSameItemSameComponents(existing, remainder))
+                    remainder = handler.insertItem(slot, remainder, false);
+            }
+        }
+        if (!remainder.isEmpty()) remainder = matrix.insert(remainder);
+        for (IItemHandler handler : ordinary) {
+            for (int slot = 0; slot < handler.getSlots() && !remainder.isEmpty(); slot++) {
+                if (handler.getStackInSlot(slot).isEmpty()) remainder = handler.insertItem(slot, remainder, false);
+            }
+        }
+        return remainder;
     }
 
     public static void onLeftClick(PlayerInteractEvent.LeftClickBlock event) {

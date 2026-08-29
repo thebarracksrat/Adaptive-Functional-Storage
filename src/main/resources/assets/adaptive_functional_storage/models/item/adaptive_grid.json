@@ -1,1 +1,1 @@
-{"parent":"minecraft:block/cube","textures":{"particle":"adaptive_functional_storage:block/drawer_side_online","north":"adaptive_functional_storage:block/grid_front_online","south":"adaptive_functional_storage:block/drawer_side_online","east":"adaptive_functional_storage:block/drawer_side_online","west":"adaptive_functional_storage:block/drawer_side_online","up":"adaptive_functional_storage:block/drawer_side_online","down":"adaptive_functional_storage:block/drawer_side_online"}}
+{"parent":"adaptive_functional_storage:block/adaptive_grid_online"}

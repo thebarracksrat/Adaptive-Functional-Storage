@@ -26,6 +26,7 @@ public class AdaptiveGridMenu extends AbstractContainerMenu {
     private final SimpleContainer resources = new SimpleContainer(MAX_SYNCED_RESOURCES);
     private final ContainerData amounts;
     private final Inventory playerInventory;
+    private int networkSyncDelay;
 
     public AdaptiveGridMenu(int id, Inventory inventory, BlockPos pos) {
         this(id, inventory, inventory.player.level().getBlockEntity(pos) instanceof AdaptiveGridBlockEntity found ? found : null);
@@ -40,14 +41,40 @@ public class AdaptiveGridMenu extends AbstractContainerMenu {
         this.grid = grid;
         this.playerInventory = inventory;
         this.amounts = new SimpleContainerData(MAX_SYNCED_RESOURCES);
-        for (int i = 0; i < MAX_SYNCED_RESOURCES; i++) addSlot(new Slot(resources, i, -1000, -1000) {
+        for (int i = 0; i < MAX_SYNCED_RESOURCES; i++) {
+            final int resourceIndex = i;
+            addSlot(new Slot(resources, i, -1000, -1000) {
             @Override public boolean mayPlace(ItemStack stack) { return false; }
             @Override public boolean mayPickup(Player player) { return true; }
             @Override public ItemStack remove(int amount) {
                 AdaptiveControllerBlockEntity controller = controller();
-                return controller == null ? super.remove(amount) : controller.extract(getItem(), amount);
+                if (controller == null) return super.remove(amount);
+                ItemStack extracted = controller.extractNetwork(getItem(), amount);
+                if (!extracted.isEmpty()) {
+                    ItemStack visible = resources.getItem(resourceIndex);
+                    visible.shrink(extracted.getCount());
+                    resources.setItem(resourceIndex, visible);
+                    amounts.set(resourceIndex, Math.max(0, amounts.get(resourceIndex) - extracted.getCount()));
+                }
+                return extracted;
             }
-        });
+            @Override public void onTake(Player player, ItemStack taken) {
+                AdaptiveControllerBlockEntity controller = controller();
+                if (controller != null && !taken.isEmpty()) {
+                    ItemStack visible = resources.getItem(resourceIndex);
+                    int expectedVisible = Math.min(taken.getMaxStackSize(), amounts.get(resourceIndex));
+                    int currentVisible = ItemStack.isSameItemSameComponents(visible, taken) ? visible.getCount() : 0;
+                    int externallyRemoved = Math.max(0, expectedVisible - currentVisible);
+                    if (externallyRemoved > 0) {
+                        ItemStack extracted = controller.extractNetwork(taken, externallyRemoved);
+                        amounts.set(resourceIndex, Math.max(0, amounts.get(resourceIndex) - extracted.getCount()));
+                        networkSyncDelay = 2;
+                    }
+                }
+                super.onTake(player, taken);
+            }
+            });
+        }
         addDataSlots(amounts);
         for (int row = 0; row < 3; row++) for (int column = 0; column < 9; column++)
             addSlot(new Slot(inventory, column + row * 9 + 9, 8 + column * 18, playerInventoryY + row * 18));
@@ -64,7 +91,7 @@ public class AdaptiveGridMenu extends AbstractContainerMenu {
 
     private void refreshSnapshot() {
         AdaptiveControllerBlockEntity controller = controller();
-        List<AdaptiveControllerBlockEntity.DisplayAssignment> entries = controller == null ? List.of() : controller.gridEntries();
+        List<AdaptiveControllerBlockEntity.DisplayAssignment> entries = controller == null ? List.of() : controller.networkGridEntries();
         for (int i = 0; i < MAX_SYNCED_RESOURCES; i++) {
             if (i < entries.size()) {
                 ItemStack identity = entries.get(i).identity();
@@ -78,7 +105,11 @@ public class AdaptiveGridMenu extends AbstractContainerMenu {
         }
     }
 
-    @Override public void broadcastChanges() { refreshSnapshot(); super.broadcastChanges(); }
+    @Override public void broadcastChanges() {
+        refreshSnapshot();
+        super.broadcastChanges();
+        if (networkSyncDelay > 0 && --networkSyncDelay == 0) broadcastFullState();
+    }
 
     @Override public boolean clickMenuButton(Player player, int id) {
         AdaptiveControllerBlockEntity controller = controller();
@@ -88,7 +119,7 @@ public class AdaptiveGridMenu extends AbstractContainerMenu {
             if (carried.isEmpty()) return false;
             int wanted = id == INSERT_ONE ? 1 : carried.getCount();
             ItemStack offered = carried.copyWithCount(wanted);
-            ItemStack remainder = controller.insert(offered);
+            ItemStack remainder = controller.insertNetwork(offered);
             carried.shrink(wanted - remainder.getCount());
             setCarried(carried);
             return true;
@@ -102,14 +133,14 @@ public class AdaptiveGridMenu extends AbstractContainerMenu {
                 ? Math.max(1, (available + 1) / 2) : identity.getMaxStackSize();
         requested = Math.min(requested, identity.getMaxStackSize());
         if (id >= EXTRACT_TO_INVENTORY_OFFSET) {
-            ItemStack extracted = controller.extract(identity, requested);
+            ItemStack extracted = controller.extractNetwork(identity, requested);
             if (!player.getInventory().add(extracted)) player.drop(extracted, false);
             return true;
         }
         ItemStack carried = getCarried();
         if (!carried.isEmpty() && !ItemStack.isSameItemSameComponents(carried, identity)) return false;
         int room = carried.isEmpty() ? identity.getMaxStackSize() : carried.getMaxStackSize() - carried.getCount();
-        ItemStack extracted = controller.extract(identity, Math.min(requested, room));
+        ItemStack extracted = controller.extractNetwork(identity, Math.min(requested, room));
         if (carried.isEmpty()) setCarried(extracted); else carried.grow(extracted.getCount());
         return true;
     }
@@ -119,7 +150,7 @@ public class AdaptiveGridMenu extends AbstractContainerMenu {
         Slot slot = slots.get(index);
         if (!slot.hasItem()) return ItemStack.EMPTY;
         ItemStack original = slot.getItem().copy();
-        ItemStack remainder = controller() == null ? slot.getItem() : controller().insert(slot.getItem());
+        ItemStack remainder = controller() == null ? slot.getItem() : controller().insertNetwork(slot.getItem());
         slot.set(remainder);
         return remainder.getCount() == original.getCount() ? ItemStack.EMPTY : original;
     }

@@ -21,7 +21,10 @@ public final class ModBlockEntities {
                     ModBlocks.ADAPTIVE_CONTROLLER.get()).build(null));
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AdaptiveDrawerBlockEntity>> ADAPTIVE_DRAWER =
             TYPES.register("adaptive_drawer", () -> BlockEntityType.Builder.of(AdaptiveDrawerBlockEntity::new,
-                    ModBlocks.ADAPTIVE_DRAWER.get()).build(null));
+                    ModBlocks.ADAPTIVE_DRAWER.get(), ModBlocks.ADAPTIVE_OAK_DRAWER.get(), ModBlocks.ADAPTIVE_BIRCH_DRAWER.get(),
+                    ModBlocks.ADAPTIVE_JUNGLE_DRAWER.get(), ModBlocks.ADAPTIVE_ACACIA_DRAWER.get(), ModBlocks.ADAPTIVE_DARK_OAK_DRAWER.get(),
+                    ModBlocks.ADAPTIVE_MANGROVE_DRAWER.get(), ModBlocks.ADAPTIVE_CHERRY_DRAWER.get(), ModBlocks.ADAPTIVE_CRIMSON_DRAWER.get(),
+                    ModBlocks.ADAPTIVE_WARPED_DRAWER.get()).build(null));
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AdaptiveGridBlockEntity>> ADAPTIVE_GRID =
             TYPES.register("adaptive_grid", () -> BlockEntityType.Builder.of(AdaptiveGridBlockEntity::new,
                     ModBlocks.ADAPTIVE_GRID.get()).build(null));

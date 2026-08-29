@@ -28,13 +28,20 @@ public final class AdaptiveFunctionalStorage {
             .displayItems((parameters, output) -> {
                 output.accept(ModBlocks.ADAPTIVE_CONTROLLER_ITEM.get());
                 output.accept(ModBlocks.ADAPTIVE_DRAWER_ITEM.get());
+                output.accept(ModBlocks.ADAPTIVE_OAK_DRAWER_ITEM.get());
+                output.accept(ModBlocks.ADAPTIVE_BIRCH_DRAWER_ITEM.get());
+                output.accept(ModBlocks.ADAPTIVE_JUNGLE_DRAWER_ITEM.get());
+                output.accept(ModBlocks.ADAPTIVE_ACACIA_DRAWER_ITEM.get());
+                output.accept(ModBlocks.ADAPTIVE_DARK_OAK_DRAWER_ITEM.get());
+                output.accept(ModBlocks.ADAPTIVE_MANGROVE_DRAWER_ITEM.get());
+                output.accept(ModBlocks.ADAPTIVE_CHERRY_DRAWER_ITEM.get());
+                output.accept(ModBlocks.ADAPTIVE_CRIMSON_DRAWER_ITEM.get());
+                output.accept(ModBlocks.ADAPTIVE_WARPED_DRAWER_ITEM.get());
                 output.accept(ModBlocks.ADAPTIVE_GRID_ITEM.get());
                 output.accept(ModBlocks.ADAPTIVE_CRAFTING_GRID_ITEM.get());
                 output.accept(ModBlocks.ADAPTIVE_DEPOSIT_ITEM.get());
-                output.accept(ModBlocks.ADAPTIVE_EXTENDER_ITEM.get());
-                output.accept(ModBlocks.ADAPTIVE_ARMORY_ITEM.get());
-                output.accept(ModBlocks.ADAPTIVE_FLUID_DRAWER_ITEM.get());
                 output.accept(ModItems.ADAPTIVE_CONFIGURATION_TOOL.get());
+                output.accept(ModItems.ADAPTIVE_UPGRADE.get());
             }).build());
 
     public AdaptiveFunctionalStorage(IEventBus modBus) {
@@ -55,10 +62,6 @@ public final class AdaptiveFunctionalStorage {
                 Capabilities.EnergyStorage.BLOCK,
                 ModBlockEntities.ADAPTIVE_CONTROLLER.get(),
                 (controller, side) -> controller.energyStorage()));
-        modBus.addListener((RegisterCapabilitiesEvent event) -> event.registerBlockEntity(
-                Capabilities.FluidHandler.BLOCK,
-                ModBlockEntities.ADAPTIVE_FLUID_DRAWER.get(),
-                (drawer, side) -> drawer.tank()));
         NeoForge.EVENT_BUS.addListener(InteractionEvents::onLeftClick);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, true, InteractionEvents::onRightClick);
     }
