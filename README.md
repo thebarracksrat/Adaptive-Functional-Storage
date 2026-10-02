@@ -10,7 +10,7 @@ The Adaptive Matrix consumes 20 FE/t plus 5 FE/t for every linked, loaded Adapti
 
 - Minecraft 1.21.1
 - NeoForge 21.1 or newer
-- Functional Storage 1.5.5 or newer
+- Functional Storage 1.5.5 or newer (build target 1.5.7)
 
 ## License
 

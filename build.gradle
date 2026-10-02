@@ -1,61 +1,38 @@
 plugins {
-    id 'java-library'
-    id 'net.neoforged.moddev' version '2.0.107'
+    id 'net.neoforged.moddev' version '2.0.107' apply false
 }
 
-group = 'com.silentvector.architects'
-base { archivesName = 'adaptive-functional-storage' }
-version = '0.2.0'
+subprojects {
+    apply plugin: 'java-library'
 
-java {
-    toolchain.languageVersion = JavaLanguageVersion.of(21)
-    withSourcesJar()
-}
+    group = 'com.silentvector.architects'
+    version = "${mod_version}+${minecraft_version}"
 
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-    options.release = 21
-}
-
-tasks.withType(ProcessResources).configureEach {
-    def replacements = [
-            minecraft_version      : providers.gradleProperty('minecraft_version').get(),
-            neoforge_version_range : providers.gradleProperty('neoforge_version_range').get(),
-            loader_version_range   : providers.gradleProperty('loader_version_range').get(),
-            mod_version            : project.version
-    ]
-    inputs.properties replacements
-    filesMatching('META-INF/neoforge.mods.toml') { expand replacements }
-}
-
-configurations.configureEach {
-    exclude group: 'mezz.jei'
-}
-
-repositories {
-    exclusiveContent {
-        forRepository { maven { name = 'Modrinth'; url = 'https://api.modrinth.com/maven' } }
-        filter { includeGroup 'maven.modrinth' }
+    java {
+        toolchain.languageVersion = JavaLanguageVersion.of(21)
+        withSourcesJar()
     }
-    maven { name = 'BlameJared'; url = 'https://maven.blamejared.com/' }
-}
 
-dependencies {
-    implementation 'maven.modrinth:cO40ZIg3:sOE4zjiT'
-    implementation 'com.hrznstudio:titanium:1.21-4.0.34'
-    runtimeOnly 'maven.modrinth:U6BUTZ7K:RjHfHgSn'
-    runtimeOnly 'net.darkhax.bookshelf:bookshelf-neoforge-1.21.1:21.1.75'
-    runtimeOnly 'net.darkhax.pricklemc:prickle-neoforge-1.21.1:21.1.4'
-    runtimeOnly 'maven.modrinth:fRiHVvU7:n2jlxdLV'
-    compileOnly 'maven.modrinth:fRiHVvU7:n2jlxdLV'
-    runtimeOnly 'maven.modrinth:blEO0qto:nC6nfixg'
-}
-
-neoForge {
-    version = providers.gradleProperty('neoforge_version').get()
-    runs {
-        client { client(); gameDirectory = project.layout.projectDirectory.dir('run/client') }
-        server { server(); gameDirectory = project.layout.projectDirectory.dir('run/server'); programArgument '--nogui' }
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.release = 21
     }
-    mods { adaptive_functional_storage { sourceSet sourceSets.main } }
+
+    repositories {
+        mavenCentral()
+        exclusiveContent {
+            forRepository { maven { name = 'Modrinth'; url = 'https://api.modrinth.com/maven' } }
+            filter { includeGroup 'maven.modrinth' }
+        }
+        maven { name = 'BlameJared'; url = 'https://maven.blamejared.com/' }
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = 'Sponge'
+                    url = 'https://repo.spongepowered.org/repository/maven-public'
+                }
+            }
+            filter { includeGroupAndSubgroups('org.spongepowered') }
+        }
+    }
 }

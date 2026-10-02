@@ -1,6 +1,8 @@
 .gradle/
 build/
+**/build/
 run/
+**/run/
 release/
 art/fs_editable_references/_extract/
 out/
