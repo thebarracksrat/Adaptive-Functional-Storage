@@ -13,4 +13,4 @@ plugins {
 rootProject.name = 'adaptive-functional-storage'
 
 include 'common'
-include 'neoforge'
+include 'forge'

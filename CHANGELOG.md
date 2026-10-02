@@ -1,5 +1,11 @@
 # Adaptive Functional Storage 0.2.1
 
+- Ported the MultiLoader tree to Minecraft 1.20.1 Forge (`common/` + `forge/`).
+- Published jar naming is `adaptive-functional-storage-0.2.1+1.20.1-forge.jar`.
+- Build target is Functional Storage 1.2.14 with Titanium; linking tools use NBT instead of FSAttachments.
+
+# Adaptive Functional Storage 0.2.1
+
 - Restructured the 1.21.1 NeoForge line into a MultiLoader layout (`common/` + `neoforge/`).
 - Published jar naming is now `adaptive-functional-storage-0.2.1+1.21.1-neoforge.jar`.
 - Build target updated to Functional Storage 1.5.7.
