@@ -1,6 +1,8 @@
 .gradle/
 build/
+**/build/
 run/
+**/run/
 release/
 art/fs_editable_references/_extract/
 out/
@@ -12,6 +14,8 @@ out/
 .project
 .settings/
 .vscode/
+.cursor/
+AGENTS.md
 *.log
 hs_err_pid*
 replay_pid*

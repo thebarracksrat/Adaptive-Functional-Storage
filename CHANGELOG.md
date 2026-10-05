@@ -1,3 +1,9 @@
+# Adaptive Functional Storage 0.2.1
+
+- Restructured the 1.21.1 NeoForge line into a MultiLoader layout (`common/` + `neoforge/`).
+- Published jar naming is now `adaptive-functional-storage-0.2.1+1.21.1-neoforge.jar`.
+- Build target updated to Functional Storage 1.5.7.
+
 # Adaptive Functional Storage 0.2.0
 
 This update rebuilds Adaptive Functional Storage as a closer extension of Functional Storage rather than a separate drawer network.

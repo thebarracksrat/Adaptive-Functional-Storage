@@ -1,5 +1,6 @@
 package com.silentvector.adaptivefunctionalstorage;
 
+import com.silentvector.adaptivefunctionalstorage.event.InteractionEvents;
 import com.silentvector.adaptivefunctionalstorage.registry.ModBlockEntities;
 import com.silentvector.adaptivefunctionalstorage.registry.ModBlocks;
 import com.silentvector.adaptivefunctionalstorage.registry.ModItems;
@@ -7,21 +8,20 @@ import com.silentvector.adaptivefunctionalstorage.registry.ModMenus;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import com.silentvector.adaptivefunctionalstorage.event.InteractionEvents;
-import net.neoforged.bus.api.EventPriority;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.function.Supplier;
 
 @Mod(AdaptiveFunctionalStorage.MOD_ID)
-public final class AdaptiveFunctionalStorage {
-    public static final String MOD_ID = "adaptive_functional_storage";
-    private static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MOD_ID);
+public final class AdaptiveFunctionalStorageNeoForge {
+    private static final DeferredRegister<CreativeModeTab> TABS =
+            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, AdaptiveFunctionalStorage.MOD_ID);
     private static final Supplier<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup.adaptive_functional_storage"))
             .icon(() -> ModBlocks.ADAPTIVE_DRAWER_ITEM.get().getDefaultInstance())
@@ -44,7 +44,7 @@ public final class AdaptiveFunctionalStorage {
                 output.accept(ModItems.ADAPTIVE_UPGRADE.get());
             }).build());
 
-    public AdaptiveFunctionalStorage(IEventBus modBus) {
+    public AdaptiveFunctionalStorageNeoForge(IEventBus modBus) {
         ModItems.ITEMS.register(modBus);
         ModBlocks.BLOCKS.register(modBus);
         ModBlockEntities.TYPES.register(modBus);
