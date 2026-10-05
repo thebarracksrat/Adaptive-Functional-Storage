@@ -1,0 +1,1 @@
+{"parent":"minecraft:block/block","loader":"forge:composite","textures":{"particle":"adaptive_functional_storage:block/grid_front_offline"},"children":{"front":{"parent":"functionalstorage:block/front","textures":{"front":"adaptive_functional_storage:block/grid_front_offline"}},"side":{"parent":"functionalstorage:block/side_machine"}}}
